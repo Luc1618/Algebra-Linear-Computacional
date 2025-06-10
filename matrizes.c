@@ -1,50 +1,52 @@
-#include <studio.h>
-#include <stdblib.h>
-#include "matrizes.h"
-#include <>
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <math.h> 
+#include "matrizA.h"
+#include "vetorB.h"
+#include "vetorX.h"
 
+extern void dsyrk_(char *uplo, char *trans, int *n, int *k, double *alpha, double *A, const int *ldA, double *beta, double *C, int *ldc);
 
-extern void dgeqrf_ (const int *m, const int *n, double *A, const int *ldA, double *tau, double *work, const int *lwork, int *info) ;
+extern void dgemv_(char *trans, int *m, int *n, double *alpha, double *A, const int *ldA, double *x, int *incx, double *beta, double *y, int *incy);
 
-extern void dormqr_ (const char *side,const char *trans,const int *m,const int *n,const int *k, double *A,const int *ldA, double *tau, double *c,const int *ldC, double *work, int *lwork, int *info) ;
+extern void dposv_(char *uplo, int *n, int *nrhs, double *A, const int *ldA, double *B, int *ldb, int *info);
 
-extern void dtrsv_ (const char *uplo, const char *trans, const char *diag, const int *n, double *a, const int *lda, double *x, const int *incx) ;
+int main() {
+    int m = 100;
+    int n = 7;
+    // Alterar tamanho 
+    double AtA[n*n];  // n x n
+    double Atb[n*n];  // n x 1
+    double alpha = 1.0;
+    double beta = 0.0;
+    int k = m;
+    int l = n ;
+    int info;
+    int inc1 = 1;
+    int i;
 
-int main(int argc, char **argv)
-{
-	int m = 20 ;
-	int n = 20 ;
-	double tau[ldA] ;
-	int lwork = -1;
-	double work0[2] ;
-	int *work ;
-	int info ;
-	int one = 1 ; 
-	int k = n ;
-    int i ;
+printf("m = %d, n = %d, lda = %d\n", m, n, ldA);
 
-dgeqrf_(&m, &n, A, &ldA, tau, work0, &lwork, &info) ;
-lwork = work0[0]
-printf("Tamanho ótimo de área de trabalho=%d\n", lwork) ;
-work = calloc(lwork, sizeof(double)) ;
+// 1. AtA = Aᵗ A
+dsyrk_("U", "T", &l, &k, &alpha, A, &ldA, &beta, AtA, &n);
 
-dgeqrf_(&m, &n, A, &ldA, tau, work0, &lwork, &info) ;
+// 2. Atb = Aᵗ b
+dgemv_("T", &m, &n, &alpha, A, &ldA, b, &inc1, &beta, Atb, &inc1);
 
-printf("Após dgeqrf info=%d\n", info) ;
+// 3. Resolve AtA x = Atb usando Cholesky
+dposv_("U", &n, &inc1, AtA, &n, Atb, &n, &info);
 
-dormqr_ ("L", "T", &m, &one, &k, A, &ldA, tau, b, &ldb, work, &lwork, &info) ;
+printf("Erro: dposv_ retornou info = %d\n", info);
 
-printf("Após dormqr info=%d\n", info)
-
-dtrsv_ ("U", "N", "N", &n, A, &ldA, double *b, &one) ;
-
+// Solução Julia | Solução C/lapack | Erro relativo
+printf("Solução Julia | Solução C/lapack | Erro relativo \n");
 for (i = 0; i < n; i++)
-    printf("%-16e %-16e %-16e\n", x[i], b[i], fabs((x[i] - b[i]))/b[i]) ;
 
+    printf("%-16e %-16e %-16e\n", x[i], Atb[i], fabs((x[i] - Atb[i]))/Atb[i]) ;
 
-
-free(work) ;
 
 }
+
+
 
 
